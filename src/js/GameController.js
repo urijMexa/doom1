@@ -8,18 +8,18 @@ export default class GameController {
     this.maxMisses = 5;
     this.currentPosition = -1;
     this.goblinElement = null;
-    this.intervalId = null;
+    this.gameIsActive = false;
 
-    // Привязываем методы к контексту
+    this.timeoutId = null;
+
     this.onCellClick = this.onCellClick.bind(this);
-    this.moveGoblin = this.moveGoblin.bind(this);
+    this.gameLoop = this.gameLoop.bind(this);
   }
 
   init() {
     this.createGoblin();
     this.gameBoard.boardElement.addEventListener('click', this.onCellClick);
-    document.getElementById('restart-button')
-      .addEventListener('click', () => this.restartGame());
+    document.getElementById('restart-button').addEventListener('click', () => this.restartGame());
     this.startGame();
   }
 
@@ -33,11 +33,13 @@ export default class GameController {
   startGame() {
     this.score = 0;
     this.misses = 0;
+    this.currentPosition = -1;
+    this.gameIsActive = true;
     this.updateStats();
-    this.intervalId = setInterval(this.moveGoblin, 1000);
+    this.gameLoop();
   }
 
-  moveGoblin() {
+  gameLoop() {
     if (this.currentPosition !== -1) {
       this.misses++;
       this.updateStats();
@@ -47,7 +49,6 @@ export default class GameController {
       }
     }
 
-    // Удаляем гоблина из старой ячейки
     if (this.gameBoard.cells[this.currentPosition]) {
       this.gameBoard.cells[this.currentPosition].innerHTML = '';
     }
@@ -59,21 +60,30 @@ export default class GameController {
 
     this.currentPosition = newPosition;
     this.gameBoard.cells[this.currentPosition].append(this.goblinElement);
+
+    this.timeoutId = setTimeout(this.gameLoop, 1000);
   }
 
   onCellClick(event) {
-    const cell = event.target.closest('.cell');
-    if (!cell) return;
-
-    if (cell.contains(this.goblinElement)) {
-      this.score++;
-      this.goblinElement.remove();
-      this.currentPosition = -1; // Сбрасываем позицию, чтобы не засчитать промах
-      clearInterval(this.intervalId); // Сбрасываем таймер
-      this.updateStats();
-      this.moveGoblin(); // Сразу перемещаем гоблина
-      this.intervalId = setInterval(this.moveGoblin, 1000); // И запускаем таймер заново
+    if (!this.gameIsActive) {
+      return;
     }
+
+    const cell = event.target.closest('.cell');
+    if (!cell || !cell.contains(this.goblinElement)) {
+      return;
+    }
+
+    this.score++;
+    this.updateStats();
+
+    // Удаляем гоблина
+    this.gameBoard.cells[this.currentPosition].innerHTML = '';
+    this.currentPosition = -1;
+
+    clearTimeout(this.timeoutId);
+
+    this.gameLoop();
   }
 
   updateStats() {
@@ -86,19 +96,17 @@ export default class GameController {
   }
 
   endGame() {
-    clearInterval(this.intervalId);
-    this.gameBoard.boardElement.removeEventListener('click', this.onCellClick);
+    this.gameIsActive = false;
+    clearTimeout(this.timeoutId);
+    if (this.gameBoard.cells[this.currentPosition]) {
+      this.gameBoard.cells[this.currentPosition].innerHTML = '';
+    }
     document.getElementById('final-score').textContent = this.score;
-    document.getElementById('game-over-modal')
-      .classList
-      .add('active');
+    document.getElementById('game-over-modal').classList.add('active');
   }
 
   restartGame() {
-    document.getElementById('game-over-modal')
-      .classList
-      .remove('active');
-    this.gameBoard.boardElement.addEventListener('click', this.onCellClick);
+    document.getElementById('game-over-modal').classList.remove('active');
     this.startGame();
   }
 }
