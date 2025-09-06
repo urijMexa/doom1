@@ -10,6 +10,8 @@ export default class GameController {
     this.goblinElement = null;
     this.gameIsActive = false;
     this.timeoutId = null;
+
+    // Флаг для надежной регистрации попадания между циклом и кликом
     this.goblinHit = false;
 
     this.onCellClick = this.onCellClick.bind(this);
@@ -74,6 +76,7 @@ export default class GameController {
 
     const cell = event.target.closest('.cell');
     if (!cell) {
+      // Клик был вне игрового поля
       return;
     }
 
@@ -82,9 +85,9 @@ export default class GameController {
         return;
       }
       this.score++;
-      this.updateStats();
       this.goblinHit = true;
-      this.gameBoard.cells[this.currentPosition].innerHTML = '';
+      this.gameBoard.cells[this.currentPosition].innerHTML = ''; // Убираем гоблина
+      this.updateStats();
     } else {
       this.misses++;
       this.updateStats();
