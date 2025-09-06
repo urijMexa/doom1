@@ -7,7 +7,6 @@ export class GameController {
     this.maxMisses = 5;
     this.isGameActive = true;
     this.timer = null;
-    this.goblinTimeout = null;
 
     this.scoreElement = document.getElementById('score');
     this.missesElement = document.getElementById('misses');
@@ -30,25 +29,20 @@ export class GameController {
   startGame() {
     this.timer = setInterval(() => {
       if (!this.isGameActive) return;
+
       this.moveGoblin();
     }, 1000);
   }
 
   moveGoblin() {
-    // Очищаем предыдущий таймаут
-    if (this.goblinTimeout) {
-      clearTimeout(this.goblinTimeout);
-    }
-
     if (!this.goblin.move()) {
-      this.handleMiss();
       return;
     }
 
-    // Устанавливаем таймаут для автоматического скрытия гоблина через 1 секунду
-    this.goblinTimeout = setTimeout(() => {
+    // Таймер для автоматического скрытия гоблина и подсчета пропуска
+    setTimeout(() => {
       if (this.isGameActive && this.goblin.isVisible) {
-        this.handleMiss(); // Промах если гоблин не был кликнут
+        this.handleMiss(); // Гоблин исчез - считаем пропуск
         this.goblin.hide();
       }
     }, 1000);
@@ -65,11 +59,6 @@ export class GameController {
   }
 
   handleHit() {
-    // Очищаем таймаут скрытия гоблина
-    if (this.goblinTimeout) {
-      clearTimeout(this.goblinTimeout);
-    }
-
     this.score++;
     this.goblin.hide();
     this.updateUI();
@@ -97,10 +86,6 @@ export class GameController {
     this.isGameActive = false;
     clearInterval(this.timer);
 
-    if (this.goblinTimeout) {
-      clearTimeout(this.goblinTimeout);
-    }
-
     this.modalMessage.textContent = `Game Over! Your score: ${this.score}`;
     this.modal.style.display = 'block';
   }
@@ -109,12 +94,6 @@ export class GameController {
     this.score = 0;
     this.misses = 0;
     this.isGameActive = true;
-
-    clearInterval(this.timer);
-    if (this.goblinTimeout) {
-      clearTimeout(this.goblinTimeout);
-    }
-
     this.modal.style.display = 'none';
     this.goblin.hide();
     this.updateUI();
